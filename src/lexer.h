@@ -39,6 +39,8 @@ class Lexer
     Lexer(std::string input);
     std::vector<LEXED_TOKEN> lex(void);
     std::string              lex_string(char delim);
+    double                   lex_number();
+    void                     print_tokens(std::vector<LEXED_TOKEN> tokens);
 };
 
 #endif // LEXER_H
