@@ -16,12 +16,10 @@ std::vector<LEXED_TOKEN> Lexer::lex(void)
 
     cur_line = 1;
 
-    while (cur_char < input.length() - 1)
+    for (char c = input[cur_char]; cur_char < input.length() - 1; cur_char++, c = input[cur_char])
     {
         LEXED_TOKEN token;
         token.token_type = TOKENS_ENUM;
-
-        char c = input[cur_char];
 
         if (c == ':' || c == ' ' || c == ',')
             goto end;
@@ -90,14 +88,9 @@ std::string Lexer::lex_string(char delim)
     ++cur_char_line;
     int start = cur_char;
 
-    char c = input[cur_char];
-
-    while (c != '\n' && c != delim && cur_char < input.length() - 1)
-    {
-        ++cur_char;
-        ++cur_char_line;
-        c = input[cur_char];
-    }
+    for (char c = input[cur_char]; c != '\n' && c != delim && cur_char < input.length() - 1;
+         ++cur_char, ++cur_char_line, c = input[cur_char])
+        ;
 
     if (cur_char >= input.length())
     {
@@ -117,11 +110,9 @@ double Lexer::lex_number()
     int  start = cur_char;
     char c     = input[cur_char];
 
-    while ((isdigit(c) || c == '.' || c == '-') && cur_char < input.length())
-    {
-        ++cur_char;
-        c = input[cur_char];
-    }
+    for (c = input[cur_char]; (isdigit(c) || c == '.' || c == '-') && cur_char < input.length();
+         ++cur_char, c = input[cur_char])
+        ;
 
     if (!isdigit(c) && c != '.' && c != ' ' && c != ',' && cur_char < input.length())
     {
