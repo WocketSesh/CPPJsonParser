@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+// TODO: change all throw statements to fprintf(stderr)
+
 Lexer::Lexer(std::string input)
 {
     this->input = input;
@@ -16,19 +18,21 @@ std::vector<LEXED_TOKEN> Lexer::lex(void)
 
     cur_line = 1;
 
-    for (char c = input[cur_char]; cur_char < input.length() - 1; cur_char++, c = input[cur_char])
+    for (char c = input[cur_char]; cur_char < input.length(); cur_char++, cur_char_line++, c = input[cur_char])
     {
         LEXED_TOKEN token;
         token.token_type = TOKENS_ENUM;
 
         if (c == ':' || c == ' ' || c == ',')
-            goto end;
+            continue;
 
         if (c == '\n')
         {
             ++cur_line;
             cur_char_line = 0;
         }
+        // JSON doesnt support single quote?
+        // Also doesnt support unquoted keys?!?
         else if (c == '"' || c == '\'')
         {
             token.token_type = STRING;
@@ -71,15 +75,45 @@ std::vector<LEXED_TOKEN> Lexer::lex(void)
             token.line       = cur_line;
             token.value      = NULL;
         }
+        // can only be bool value?
+        else if (c == 'f' || c == 't')
+        {
+            token.token_type = BOOLEAN;
+            token.char_index = cur_char_line;
+            token.line       = cur_line;
+            token.value      = lex_bool();
+        }
+        else
+        {
+            fprintf(stderr, "Unexpected token at %d:%d single: '%c' full: '%s'\n", cur_line, cur_char_line, c,
+                    lex_string(' ').c_str());
+            exit(EXIT_FAILURE);
+        }
 
-    end:
         if (token.token_type != TOKENS_ENUM)
             tokens.push_back(token);
-        ++cur_char;
-        ++cur_char_line;
     }
 
     return tokens;
+}
+
+bool Lexer::lex_bool()
+{
+    int start = cur_char;
+
+    for (char c = input[cur_char];
+         c != '\n' && c != ' ' && c != ',' && c != ']' && c != '}' && cur_char < input.length();
+         ++cur_char, ++cur_char_line, c = input[cur_char])
+        ;
+
+    std::string b = input.substr(start, cur_char - start);
+
+    if (b != "true" && b != "false")
+    {
+        throw std::runtime_error("Error lexing boolean");
+    }
+
+    return b == "true" ? true : false;
 }
 
 std::string Lexer::lex_string(char delim)
@@ -135,12 +169,39 @@ void Lexer::print_tokens(std::vector<LEXED_TOKEN> tokens)
             break;
 
         case NUMBER:
-            fprintf(stdout, "Token Type: %s\nToken Line: %d\nToken Char: %d\nToken Value: %.14g\n", "string",
+            fprintf(stdout, "Token Type: %s\nToken Line: %d\nToken Char: %d\nToken Value: %.14g\n", "number",
                     tokens[i].line, tokens[i].char_index, std::any_cast<double>(tokens[i].value));
+            break;
+
+        case BOOLEAN:
+            fprintf(stdout, "Token Type: %s\nToken Line: %d\nToken Char: %d\nToken Value: %s\n", "boolean",
+                    tokens[i].line, tokens[i].char_index, std::any_cast<bool>(tokens[i].value) ? "true" : "false");
+            break;
+
+        case ARRAY_START:
+            fprintf(stdout, "Token Type: %s\nToken Line: %d\nToken Char: %d\nToken Value: %s\n", "ARRAY_START",
+                    tokens[i].line, tokens[i].char_index, "[");
+            break;
+
+        case ARRAY_END:
+            fprintf(stdout, "Token Type: %s\nToken Line: %d\nToken Char: %d\nToken Value: %s\n", "ARRAY_END",
+                    tokens[i].line, tokens[i].char_index, "]");
+            break;
+
+        case OBJECT_START:
+            fprintf(stdout, "Token Type: %s\nToken Line: %d\nToken Char: %d\nToken Value: %s\n", "OBJECT_START",
+                    tokens[i].line, tokens[i].char_index, "{");
+            break;
+
+        case OBJECT_END:
+            fprintf(stdout, "Token Type: %s\nToken Line: %d\nToken Char: %d\nToken Value: %s\n", "OBJECT_END",
+                    tokens[i].line, tokens[i].char_index, "}");
             break;
 
         default:
             break;
         }
+
+        fprintf(stdout, "-------\n");
     }
 }

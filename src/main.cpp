@@ -5,7 +5,9 @@
 
 int main(void)
 {
-    Lexer l = Lexer("'string 1' not a string \n'string 2' ' some other string' 123 321 101 1.4 -1.4 .14 -.21 ");
+    Lexer l = Lexer("{'somekey': 'somevalue', 'somenumb': 123, 'somearray': ['1st', '2nd', '3rd', '4th', false, true, "
+                    "], "
+                    "'someobj': {}}");
 
     std::vector<LEXED_TOKEN> tokens = l.lex();
 
